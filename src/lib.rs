@@ -275,6 +275,10 @@ impl<T> PathTree<T> {
         self.routes.get(index).and_then(|subs| Some(&subs[..]))
     }
 
+    pub fn get_route_with_sid(&self, index: usize, sid: usize) -> Option<&(T, Vec<Piece>)> {
+        self.routes.get(index).and_then(|subs| subs.get(sid))
+    }
+
     /// Generates URL with the params.
     #[must_use]
     pub fn url_for(&self, index: usize, params: &[&str]) -> Option<String> {
