@@ -230,6 +230,13 @@ impl<T> PathTree<T> {
         })
     }
 
+    /// Removes a path from the tree.
+    pub fn remove(&mut self, path: &str) -> Option<T> {
+        self.node
+            .remove(path.as_bytes())
+            .and_then(|id| Some(self.routes.remove(id).0))
+    }
+
     /// Gets the route by id.
     #[must_use]
     #[inline]
