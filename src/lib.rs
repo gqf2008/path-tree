@@ -155,7 +155,7 @@ pub use parser::{Kind, Parser, Piece, Position};
 #[derive(Clone, Debug)]
 pub struct PathTree<T> {
     id: usize,
-    routes: Vec<(T, Vec<Piece>)>,
+    routes: Vec<Vec<(T, Vec<Piece>)>>,
     pub node: Node<usize>,
 }
 
@@ -178,10 +178,10 @@ impl<T> PathTree<T> {
 
     /// Inserts a part path-value to the tree and returns the id.
     #[must_use]
-    pub fn insert(&mut self, path: &str, value: T) -> usize {
+    pub fn insert(&mut self, path: &str, value: T) -> (usize, usize) {
         let mut node = &mut self.node;
 
-        let (overwritten, pieces) = if path.is_empty() {
+        let (_overwritten, pieces) = if path.is_empty() {
             (false, Vec::new())
         } else {
             let pieces = Parser::new(path).collect::<Vec<_>>();
@@ -193,54 +193,93 @@ impl<T> PathTree<T> {
         };
 
         if let Some(id) = node.value {
-            self.routes[id].0 = value;
-            if overwritten {
-                self.routes[id].1 = pieces;
-            }
-            id
+            let sub = &mut self.routes[id];
+            sub.push((value, pieces));
+            // self.routes[id].0 = value;
+            // if overwritten {
+            //     self.routes[id].1 = pieces;
+            // }
+            (id, sub.len() - 1)
         } else {
-            self.routes.push((value, pieces));
+            let mut sub = Vec::new();
+            sub.push((value, pieces));
+            self.routes.push(sub);
             let id = self.id;
             node.value = Some(id);
             self.id += 1;
-            id
+            (id, 0)
         }
     }
 
     /// Returns the [`Path`] by the given path.
     #[must_use]
-    pub fn find<'a, 'b>(&'a self, path: &'b str) -> Option<(&T, Path<'a, 'b>)> {
+    pub fn find<'a, 'b>(&'a self, path: &'b str) -> Option<Vec<(&T, Path<'a, 'b>)>> {
         let bytes = path.as_bytes();
         self.node.find(bytes).and_then(|(id, ranges)| {
-            self.routes.get(*id).map(|(value, pieces)| {
-                (
-                    value,
-                    Path {
-                        id,
-                        pieces,
-                        // opt!
-                        raws: ranges
-                            .into_iter()
-                            .filter_map(|r| from_utf8(&bytes[r]).ok())
-                            .rev()
-                            .collect(),
-                    },
-                )
+            self.routes.get(*id).and_then(|subs| {
+                let ret: Vec<(&T, Path<'a, 'b>)> = subs
+                    .iter()
+                    .map(|(value, pieces)| {
+                        (
+                            value,
+                            Path {
+                                id,
+                                pieces,
+                                raws: ranges
+                                    .clone()
+                                    .into_iter()
+                                    .filter_map(|r| from_utf8(&bytes[r]).ok())
+                                    .rev()
+                                    .collect(),
+                            },
+                        )
+                    })
+                    .collect();
+                Some(ret)
             })
+        })
+    }
+
+    pub fn remove_with_sid(&mut self, path: &str, sid: usize) -> Option<T> {
+        let mut rm_node = false;
+        let mut ret = None;
+        if let Some((id, _ranges)) = self.node.find(path.as_bytes()) {
+            if let Some(subs) = self.routes.get_mut(*id) {
+                if subs.len() > sid {
+                    let value = subs.remove(sid).0;
+                    rm_node = subs.is_empty();
+                    ret = Some(value);
+                }
+            }
+        }
+        if rm_node {
+            self.node.remove(path.as_bytes());
+        }
+        ret
+    }
+    /// Removes a path from the tree.
+    pub fn remove(&mut self, path: &str) -> Option<Vec<T>> {
+        self.node.remove(path.as_bytes()).and_then(|id| {
+            self.routes
+                .remove(id)
+                .into_iter()
+                .map(|(value, _)| Some(value))
+                .collect()
         })
     }
 
     /// Gets the route by id.
     #[must_use]
     #[inline]
-    pub fn get_route(&self, index: usize) -> Option<&(T, Vec<Piece>)> {
-        self.routes.get(index)
+    pub fn get_route(&self, index: usize) -> Option<&[(T, Vec<Piece>)]> {
+        self.routes.get(index).and_then(|subs| Some(&subs[..]))
     }
 
     /// Generates URL with the params.
     #[must_use]
     pub fn url_for(&self, index: usize, params: &[&str]) -> Option<String> {
-        self.get_route(index).and_then(|(_, pieces)| {
+        self.get_route(index).and_then(|subs| {
+            let (_, pieces) = &subs[0];
             let mut bytes = Vec::new();
             let mut iter = params.iter();
 
@@ -259,14 +298,14 @@ impl<T> PathTree<T> {
         })
     }
 
-    pub fn iter(&self) -> Iter<'_, (T, Vec<Piece>)> {
+    pub fn iter(&self) -> Iter<'_, Vec<(T, Vec<Piece>)>> {
         self.routes.iter()
     }
 }
 
 impl<'a, T> IntoIterator for &'a PathTree<T> {
-    type Item = &'a (T, Vec<Piece>);
-    type IntoIter = Iter<'a, (T, Vec<Piece>)>;
+    type Item = &'a Vec<(T, Vec<Piece>)>;
+    type IntoIter = Iter<'a, Vec<(T, Vec<Piece>)>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()

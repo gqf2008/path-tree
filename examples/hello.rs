@@ -107,7 +107,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                         async move {
                             Ok::<_, Infallible>(match router.find(&path) {
-                                Some((handler, route)) => {
+                                Some(ret) => {
+                                    let (handler, route) = &ret[0];
                                     let p = route
                                         .params()
                                         .iter()

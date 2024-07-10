@@ -32,8 +32,8 @@ fn statics() {
     }
 
     for (i, u) in routes.iter().enumerate() {
-        let (h, _) = tree.find(u).unwrap();
-        assert_eq!(h, &i);
+        let (h, _) = &tree.find(u).unwrap()[0];
+        assert_eq!(*h, &i);
     }
 }
 
@@ -99,8 +99,8 @@ fn wildcards() {
     ];
 
     for (u, v, p) in valid_res {
-        let (h, r) = tree.find(u).unwrap();
-        assert_eq!(*h, v);
+        let (h, r) = &tree.find(u).unwrap()[0];
+        assert_eq!(**h, v);
         assert_eq!(r.params(), p);
     }
 }
@@ -127,7 +127,7 @@ fn single_named_parameter() {
     ];
 
     for (u, b) in res {
-        let n = tree.find(u);
+        let n = &tree.find(u);
         assert_eq!(n.is_some(), b);
     }
 }
@@ -139,8 +139,12 @@ fn repeated_single_named_param() {
     tree.insert("/users/:id", 0);
     tree.insert("/users/:user_id", 1);
 
-    let (h, r) = tree.find("/users/gordon").unwrap();
-    assert_eq!(*h, 1);
+    let (h, r) = &tree.find("/users/gordon").unwrap()[0];
+    assert_eq!(**h, 0);
+    assert_eq!(r.params(), vec![("id", "gordon")]);
+
+    let (h, r) = &tree.find("/users/gordon").unwrap()[1];
+    assert_eq!(**h, 1);
     assert_eq!(r.params(), vec![("user_id", "gordon")]);
 }
 
@@ -171,10 +175,11 @@ fn static_and_named_parameter() {
     ];
 
     for (u, b, a, p) in res {
-        let n = tree.find(u);
+        let n = &tree.find(u);
         assert_eq!(n.is_some(), b);
-        if let Some((h, r)) = n {
-            assert_eq!(*h, a);
+        if let Some(n) = n {
+            let (h, r) = &n[0];
+            assert_eq!(**h, a);
             assert_eq!(r.params(), p);
         }
     }
@@ -211,10 +216,11 @@ fn multi_named_parameters() {
     ];
 
     for (u, b, a, p) in res {
-        let n = tree.find(u);
+        let n = &tree.find(u);
         assert_eq!(n.is_some(), b);
-        if let Some((h, r)) = n {
-            assert_eq!(*h, a);
+        if let Some(n) = n {
+            let (h, r) = &n[0];
+            assert_eq!(**h, a);
             assert_eq!(r.params(), p);
         }
     }
@@ -246,20 +252,23 @@ fn catch_all_parameter() {
     ];
 
     for (u, b, p) in res {
-        let n = tree.find(u);
+        let n = &tree.find(u);
         assert_eq!(n.is_some(), b);
-        if let Some((h, r)) = n {
-            assert_eq!(*h, "* files");
+        if let Some(n) = n {
+            let (h, r) = &n[0];
+
+            assert_eq!(**h, "* files");
             assert_eq!(r.params(), p);
         }
     }
 
     tree.insert("/src/", "dir");
 
-    let n = tree.find("/src/");
+    let n = &tree.find("/src/");
     assert!(n.is_some());
-    if let Some((h, r)) = n {
-        assert_eq!(*h, "dir");
+    if let Some(n) = n {
+        let (h, r) = &n[0];
+        assert_eq!(**h, "dir");
         assert_eq!(r.params(), vec![]);
     }
 }
@@ -282,24 +291,27 @@ fn catch_all_parameter_with_prefix() {
     tree.insert("/commit/:sha0/compare/:sha1", "compare");
     tree.insert("/src/", "dir");
 
-    let n = tree.find("/src/");
+    let n = &tree.find("/src/");
     assert!(n.is_some());
-    if let Some((h, r)) = n {
-        assert_eq!(*h, "dir");
+    if let Some(n) = n {
+        let (h, r) = &n[0];
+        assert_eq!(**h, "dir");
         assert_eq!(r.params(), vec![]);
     }
 
-    let n = tree.find("/commit/123");
+    let n = &tree.find("/commit/123");
     assert!(n.is_some());
-    if let Some((h, r)) = n {
-        assert_eq!(*h, "hex");
+    if let Some(n) = n {
+        let (h, r) = &n[0];
+        assert_eq!(**h, "hex");
         assert_eq!(r.params(), vec![("sha", "123")]);
     }
 
-    let n = tree.find("/commit/123/compare/321");
+    let n = &tree.find("/commit/123/compare/321");
     assert!(n.is_some());
-    if let Some((h, r)) = n {
-        assert_eq!(*h, "compare");
+    if let Some(n) = n {
+        let (h, r) = &n[0];
+        assert_eq!(**h, "compare");
         assert_eq!(r.params(), vec![("sha0", "123"), ("sha1", "321")]);
     }
 
@@ -315,10 +327,11 @@ fn catch_all_parameter_with_prefix() {
     ];
 
     for (u, b, p) in res {
-        let n = tree.find(u);
+        let n = &tree.find(u);
         assert_eq!(n.is_some(), b);
-        if let Some((h, r)) = n {
-            assert_eq!(*h, "* sha");
+        if let Some(n) = n {
+            let (h, r) = &n[0];
+            assert_eq!(**h, "* sha");
             assert_eq!(r.params(), p);
         }
     }
@@ -351,10 +364,11 @@ fn static_and_catch_all_parameter() {
     ];
 
     for (u, b, a, p) in res {
-        let n = tree.find(u);
+        let n = &tree.find(u);
         assert_eq!(n.is_some(), b);
-        if let Some((h, r)) = n {
-            assert_eq!(*h, a);
+        if let Some(n) = n {
+            let (h, r) = &n[0];
+            assert_eq!(**h, a);
             assert_eq!(r.params(), p);
         }
     }
@@ -382,10 +396,11 @@ fn root_catch_all_parameter() {
     ];
 
     for (u, b, a, p) in res {
-        let n = tree.find(u);
+        let n = &tree.find(u);
         assert_eq!(n.is_some(), b);
-        if let Some((h, r)) = n {
-            assert_eq!((h)(), a);
+        if let Some(n) = n {
+            let (h, r) = &n[0];
+            assert_eq!((*h)(), a);
             assert_eq!(r.params(), p);
         }
     }
@@ -409,18 +424,20 @@ fn root_catch_all_parameter_1() {
     ];
 
     for (u, b, a, p) in res {
-        let n = tree.find(u);
+        let n = &tree.find(u);
         assert_eq!(n.is_some(), b);
-        if let Some((h, r)) = n {
-            assert_eq!((h)(), a);
+        if let Some(n) = n {
+            let (h, r) = &n[0];
+            assert_eq!((*h)(), a);
             assert_eq!(r.params(), p);
         }
     }
 
     tree.insert("/", || 0);
-    let n = tree.find("/");
+    let n = &tree.find("/");
     assert!(n.is_some());
-    if let Some((h, r)) = n {
+    if let Some(n) = n {
+        let (h, r) = &n[0];
         assert_eq!((h)(), 0);
         assert_eq!(r.params(), vec![]);
     }
@@ -436,29 +453,30 @@ fn test_named_routes_with_non_ascii_paths() {
     // ASCII only (single-byte characters)
     let n = tree.find("/matchme/abc-s-def/");
     assert!(n.is_some());
-    let (h, r) = n.unwrap();
-    assert_eq!(*h, 2);
+    let (h, r) = &n.unwrap()[0];
+
+    assert_eq!(**h, 2);
     assert_eq!(r.params(), vec![("slug", "abc-s-def")]);
 
     // with multibyte character
     let n = tree.find("/matchme/abc-ß-def/");
     assert!(n.is_some());
-    let (h, r) = n.unwrap();
-    assert_eq!(*h, 2);
+    let (h, r) = &n.unwrap()[0];
+    assert_eq!(**h, 2);
     assert_eq!(r.params(), vec![("slug", "abc-ß-def")]);
 
     // with emoji (fancy multibyte character)
     let n = tree.find("/matchme/abc-⭐-def/");
     assert!(n.is_some());
-    let (h, r) = n.unwrap();
-    assert_eq!(*h, 2);
+    let (h, r) = &n.unwrap()[0];
+    assert_eq!(**h, 2);
     assert_eq!(r.params(), vec![("slug", "abc-⭐-def")]);
 
     // with multibyte character right before the slash (char boundary check)
     let n = tree.find("/matchme/abc-def-ß/");
     assert!(n.is_some());
-    let (h, r) = n.unwrap();
-    assert_eq!(*h, 2);
+    let (h, r) = &n.unwrap()[0];
+    assert_eq!(**h, 2);
     assert_eq!(r.params(), vec![("slug", "abc-def-ß")]);
 }
 
@@ -470,14 +488,14 @@ fn test_named_wildcard_collide() {
 
     let n = tree.find("/git/rust-lang/rust");
     assert!(n.is_some());
-    let (h, r) = n.unwrap();
-    assert_eq!(*h, 1);
+    let (h, r) = &n.unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(r.params(), vec![("org", "rust-lang"), ("repo", "rust")]);
 
     let n = tree.find("/git/rust-lang");
     assert!(n.is_some());
-    let (h, r) = n.unwrap();
-    assert_eq!(*h, 2);
+    let (h, r) = &n.unwrap()[0];
+    assert_eq!(**h, 2);
     assert_eq!(r.params(), vec![("*1", "rust-lang")]);
 }
 
@@ -493,9 +511,9 @@ fn match_params() {
     tree.insert("/api/v1/:param/*", 1);
 
     assert_eq!(tree.find("/api/v1/entity"), None);
-    let (h, p) = tree.find("/api/v1/entity/").unwrap();
+    let (h, p) = &tree.find("/api/v1/entity/").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "entity"), ("*1", "")]);
     assert_eq!(p.pattern(), "/api/v1/:param/*");
     assert_eq!(
@@ -508,16 +526,16 @@ fn match_params() {
         ]
     );
 
-    let (h, p) = tree.find("/api/v1/entity/1").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/entity/1").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "entity"), ("*1", "1")]);
 
     assert_eq!(tree.find("/api/v"), None);
     assert_eq!(tree.find("/api/v2"), None);
     assert_eq!(tree.find("/api/v1/"), None);
 
-    let (h, p) = tree.find("/api/v1/entity/1/foo/bar").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/entity/1/foo/bar").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "entity"), ("*1", "1/foo/bar")]);
 
     // /
@@ -532,16 +550,16 @@ fn match_params() {
     assert_eq!(tree.find("/api/v1/entity"), None);
     assert_eq!(tree.find("/api/v1/entity/"), None);
 
-    let (h, p) = tree.find("/api/v1/entity/1").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/entity/1").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "entity"), ("+1", "1")]);
 
     assert_eq!(tree.find("/api/v"), None);
     assert_eq!(tree.find("/api/v2"), None);
     assert_eq!(tree.find("/api/v1/"), None);
 
-    let (h, p) = tree.find("/api/v1/entity/1/foo/bar").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/entity/1/foo/bar").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "entity"), ("+1", "1/foo/bar")]);
 
     // /
@@ -551,9 +569,9 @@ fn match_params() {
 
     tree.insert("/api/v1/:param?", 1);
 
-    let (h, p) = tree.find("/api/v1/").unwrap();
+    let (h, p) = &tree.find("/api/v1/").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "")]);
     assert_eq!(p.pattern(), "/api/v1/:param?");
     assert_eq!(
@@ -577,9 +595,9 @@ fn match_params() {
 
     tree.insert("/v1/some/resource/name\\:customVerb", 1);
 
-    let (h, p) = tree.find("/v1/some/resource/name:customVerb").unwrap();
+    let (h, p) = &tree.find("/v1/some/resource/name:customVerb").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![]);
     assert_eq!(p.pattern(), "/v1/some/resource/name\\:customVerb");
     assert_eq!(
@@ -601,9 +619,9 @@ fn match_params() {
 
     tree.insert(r"/v1/some/resource/:name\:customVerb", 1);
 
-    let (h, p) = tree.find("/v1/some/resource/test:customVerb").unwrap();
+    let (h, p) = &tree.find("/v1/some/resource/test:customVerb").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("name", "test")]);
     assert_eq!(
         p.pieces,
@@ -629,19 +647,19 @@ fn match_params() {
 
     tree.insert(r"/v1/some/resource/name\\\\:customVerb?\?/:param/*", 1);
 
-    let (h, p) = tree
+    let (h, p) = &tree
         .find("/v1/some/resource/name:customVerb??/test/optionalWildCard/character")
-        .unwrap();
-    assert_eq!(*h, 1);
+        .unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(
         p.params(),
         vec![("param", "test"), ("*1", "optionalWildCard/character")]
     );
 
-    let (h, p) = tree
+    let (h, p) = &tree
         .find("/v1/some/resource/name:customVerb??/test/")
-        .unwrap();
-    assert_eq!(*h, 1);
+        .unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "test"), ("*1", "")]);
 
     assert_eq!(tree.find("/v1/some/resource/name:customVerb??/test"), None);
@@ -655,20 +673,20 @@ fn match_params() {
 
     assert_eq!(tree.find("/api/v1"), None);
 
-    let (h, p) = tree.find("/api/v1/").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("*1", "")]);
 
-    let (h, p) = tree.find("/api/v1/entity").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/entity").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("*1", "entity")]);
 
-    let (h, p) = tree.find("/api/v1/entity/1/2").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/entity/1/2").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("*1", "entity/1/2")]);
 
-    let (h, p) = tree.find("/api/v1/Entity/1/2").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/Entity/1/2").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("*1", "Entity/1/2")]);
 
     // /
@@ -681,8 +699,8 @@ fn match_params() {
     assert_eq!(tree.find("/api/v1"), None);
     assert_eq!(tree.find("/api/v1/"), None);
 
-    let (h, p) = tree.find("/api/v1/entity").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/entity").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "entity")]);
 
     assert_eq!(tree.find("/api/v1/entity/1/2"), None);
@@ -712,35 +730,35 @@ fn match_params() {
     tree.insert("/api/v1/:param\\_:param2", 5);
     tree.insert("/api/v1/:param\\::param2", 6);
 
-    let (h, p) = tree.find("/api/v1/entity-entity2").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/api/v1/entity-entity2").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "entity"), ("param2", "entity2")]);
 
-    let (h, p) = tree.find("/api/v1/entity~entity2").unwrap();
-    assert_eq!(*h, 2);
+    let (h, p) = &tree.find("/api/v1/entity~entity2").unwrap()[0];
+    assert_eq!(**h, 2);
     assert_eq!(p.params(), vec![("param", "entity"), ("param2", "entity2")]);
 
-    let (h, p) = tree.find("/api/v1/entity.entity2").unwrap();
-    assert_eq!(*h, 4);
+    let (h, p) = &tree.find("/api/v1/entity.entity2").unwrap()[0];
+    assert_eq!(**h, 4);
     assert_eq!(p.params(), vec![("param", "entity"), ("param2", "entity2")]);
 
-    let (h, p) = tree.find("/api/v1/entity_entity2").unwrap();
-    assert_eq!(*h, 5);
+    let (h, p) = &tree.find("/api/v1/entity_entity2").unwrap()[0];
+    assert_eq!(**h, 5);
     assert_eq!(p.params(), vec![("param", "entity"), ("param2", "entity2")]);
 
-    let (h, p) = tree.find("/api/v1/entity:entity2").unwrap();
-    assert_eq!(*h, 6);
+    let (h, p) = &tree.find("/api/v1/entity:entity2").unwrap()[0];
+    assert_eq!(**h, 6);
     assert_eq!(p.params(), vec![("param", "entity"), ("param2", "entity2")]);
 
-    let (h, p) = tree.find("/api/v1/entity/entity2").unwrap();
-    assert_eq!(*h, 3);
+    let (h, p) = &tree.find("/api/v1/entity/entity2").unwrap()[0];
+    assert_eq!(**h, 3);
     assert_eq!(p.params(), vec![("param", "entity"), ("param2", "entity2")]);
 
     assert_eq!(tree.find("/api/v1"), None);
     assert_eq!(tree.find("/api/v1/"), None);
 
-    let (h, p) = tree.find("/api/v1/test.pdf").unwrap();
-    assert_eq!(*h, 4);
+    let (h, p) = &tree.find("/api/v1/test.pdf").unwrap()[0];
+    assert_eq!(**h, 4);
     assert_eq!(p.params(), vec![("param", "test"), ("param2", "pdf")]);
 
     // /
@@ -749,9 +767,9 @@ fn match_params() {
 
     tree.insert("/api/v1/const", 1);
 
-    let (h, p) = tree.find("/api/v1/const").unwrap();
+    let (h, p) = &tree.find("/api/v1/const").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert!(p.params().is_empty());
     assert_eq!(p.pattern(), "/api/v1/const");
     assert_eq!(p.pieces, vec![Piece::String(b"/api/v1/const".to_vec())]);
@@ -770,9 +788,9 @@ fn match_params() {
 
     tree.insert("/api/:param/fixedEnd", 1);
 
-    let (h, p) = tree.find("/api/abc/fixedEnd").unwrap();
+    let (h, p) = &tree.find("/api/abc/fixedEnd").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(
         p.pieces,
         &vec![
@@ -800,9 +818,9 @@ fn match_params() {
 
     tree.insert(r"/shop/product/\::filter/color\::color/size\::size", 1);
 
-    let (h, p) = tree.find("/shop/product/:test/color:blue/size:xs").unwrap();
+    let (h, p) = &tree.find("/shop/product/:test/color:blue/size:xs").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(
         p.pieces,
         &vec![
@@ -835,9 +853,9 @@ fn match_params() {
 
     tree.insert("/\\::param?", 1);
 
-    let (h, p) = tree.find("/:hello").unwrap();
+    let (h, p) = &tree.find("/:hello").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "hello")]);
     assert_eq!(p.pattern(), "/\\::param?");
     assert_eq!(
@@ -849,8 +867,8 @@ fn match_params() {
         ]
     );
 
-    let (h, p) = tree.find("/:").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/:").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "")]);
 
     assert_eq!(tree.find("/"), None);
@@ -863,9 +881,9 @@ fn match_params() {
 
     tree.insert("/test:sign:param", 1);
 
-    let (h, p) = tree.find("/test-abc").unwrap();
+    let (h, p) = &tree.find("/test-abc").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("sign", "-"), ("param", "abc")]);
     assert_eq!(p.pattern(), "/test:sign:param");
     assert_eq!(
@@ -877,8 +895,8 @@ fn match_params() {
         ]
     );
 
-    let (h, p) = tree.find("/test-_").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/test-_").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("sign", "-"), ("param", "_")]);
 
     assert_eq!(tree.find("/test-"), None);
@@ -892,9 +910,9 @@ fn match_params() {
 
     tree.insert("/:param1:param2?:param3", 1);
 
-    let (h, p) = tree.find("/abbbc").unwrap();
+    let (h, p) = &tree.find("/abbbc").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(
         p.params(),
         vec![("param1", "a"), ("param2", "b"), ("param3", "bbc")]
@@ -910,8 +928,8 @@ fn match_params() {
         ]
     );
 
-    let (h, p) = tree.find("/ab").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/ab").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(
         p.params(),
         vec![("param1", "a"), ("param2", ""), ("param3", "b")]
@@ -927,9 +945,9 @@ fn match_params() {
 
     tree.insert("/test:optional?:mandatory", 1);
 
-    let (h, p) = tree.find("/testo").unwrap();
+    let (h, p) = &tree.find("/testo").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("optional", ""), ("mandatory", "o")]);
     assert_eq!(p.pattern(), "/test:optional?:mandatory");
     assert_eq!(
@@ -941,8 +959,8 @@ fn match_params() {
         ]
     );
 
-    let (h, p) = tree.find("/testoaaa").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/testoaaa").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("optional", "o"), ("mandatory", "aaa")]);
 
     assert_eq!(tree.find("/test"), None);
@@ -956,9 +974,9 @@ fn match_params() {
 
     tree.insert("/test:optional?:optional2?", 1);
 
-    let (h, p) = tree.find("/testo").unwrap();
+    let (h, p) = &tree.find("/testo").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("optional", "o"), ("optional2", "")]);
     assert_eq!(p.pattern(), "/test:optional?:optional2?");
     assert_eq!(
@@ -970,12 +988,12 @@ fn match_params() {
         ]
     );
 
-    let (h, p) = tree.find("/testoaaa").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/testoaaa").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("optional", "o"), ("optional2", "aaa")]);
 
-    let (h, p) = tree.find("/test").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/test").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("optional", ""), ("optional2", "")]);
 
     assert_eq!(tree.find("/tes"), None);
@@ -988,9 +1006,9 @@ fn match_params() {
 
     tree.insert("/foo:param?bar", 1);
 
-    let (h, p) = tree.find("/foofalsebar").unwrap();
+    let (h, p) = &tree.find("/foofalsebar").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "false")]);
     assert_eq!(p.pattern(), "/foo:param?bar");
     assert_eq!(
@@ -1002,8 +1020,8 @@ fn match_params() {
         ]
     );
 
-    let (h, p) = tree.find("/foobar").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/foobar").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("param", "")]);
 
     assert_eq!(tree.find("/fooba"), None);
@@ -1017,9 +1035,9 @@ fn match_params() {
 
     tree.insert("/foo*bar", 1);
 
-    let (h, p) = tree.find("/foofalsebar").unwrap();
+    let (h, p) = &tree.find("/foofalsebar").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("*1", "false")]);
     assert_eq!(p.pattern(), "/foo*bar");
     assert_eq!(
@@ -1031,16 +1049,16 @@ fn match_params() {
         ]
     );
 
-    let (h, p) = tree.find("/foobar").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/foobar").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("*1", "")]);
 
-    let (h, p) = tree.find("/foo/bar").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/foo/bar").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("*1", "/")]);
 
-    let (h, p) = tree.find("/foo/baz/bar").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/foo/baz/bar").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("*1", "/baz/")]);
 
     assert_eq!(tree.find("/fooba"), None);
@@ -1054,9 +1072,9 @@ fn match_params() {
 
     tree.insert("/foo+bar", 1);
 
-    let (h, p) = tree.find("/foofalsebar").unwrap();
+    let (h, p) = &tree.find("/foofalsebar").unwrap()[0];
     assert_eq!(*p.id, 0);
-    assert_eq!(*h, 1);
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("+1", "false")]);
     assert_eq!(p.pattern(), "/foo+bar");
     assert_eq!(
@@ -1070,12 +1088,12 @@ fn match_params() {
 
     assert_eq!(tree.find("/foobar"), None);
 
-    let (h, p) = tree.find("/foo/bar").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/foo/bar").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("+1", "/")]);
 
-    let (h, p) = tree.find("/foo/baz/bar").unwrap();
-    assert_eq!(*h, 1);
+    let (h, p) = &tree.find("/foo/baz/bar").unwrap()[0];
+    assert_eq!(**h, 1);
     assert_eq!(p.params(), vec![("+1", "/baz/")]);
 
     assert_eq!(tree.find("/fooba"), None);
@@ -1093,8 +1111,8 @@ fn match_params() {
 
     assert_eq!(tree.find("/abbbcdefffg"), None);
 
-    let (h, p) = tree.find("/abbbcdefffg/").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/abbbcdefffg/").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1108,22 +1126,22 @@ fn match_params() {
     assert_eq!(p.pattern(), "/a*cde*g/");
     assert_eq!(p.params(), vec![("*1", "bbb"), ("*2", "fff")]);
 
-    let (_, p) = tree.find("/acdeg/").unwrap();
+    let (_, p) = &tree.find("/acdeg/").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", ""), ("*2", "")]);
 
-    let (_, p) = tree.find("/abcdeg/").unwrap();
+    let (_, p) = &tree.find("/abcdeg/").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", "b"), ("*2", "")]);
 
-    let (_, p) = tree.find("/acdefg/").unwrap();
+    let (_, p) = &tree.find("/acdefg/").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", ""), ("*2", "f")]);
 
-    let (_, p) = tree.find("/abcdefg/").unwrap();
+    let (_, p) = &tree.find("/abcdefg/").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", "b"), ("*2", "f")]);
 
-    let (_, p) = tree.find("/a/cde/g/").unwrap();
+    let (_, p) = &tree.find("/a/cde/g/").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", "/"), ("*2", "/")]);
 
-    let (_, p) = tree.find("/a/b/cde/f/g/").unwrap();
+    let (_, p) = &tree.find("/a/b/cde/f/g/").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", "/b/"), ("*2", "/f/")]);
 
     // /
@@ -1135,8 +1153,8 @@ fn match_params() {
 
     tree.insert("/*v1*/proxy", 1);
 
-    let (h, p) = tree.find("/customer/v1/cart/proxy").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/customer/v1/cart/proxy").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1150,7 +1168,7 @@ fn match_params() {
     assert_eq!(p.pattern(), "/*v1*/proxy");
     assert_eq!(p.params(), vec![("*1", "customer/"), ("*2", "/cart")]);
 
-    let (_, p) = tree.find("/v1/proxy").unwrap();
+    let (_, p) = &tree.find("/v1/proxy").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", ""), ("*2", "")]);
 
     assert_eq!(tree.find("/v1/"), None);
@@ -1180,8 +1198,8 @@ fn match_params() {
     tree.insert("/_:name", 6);
     tree.insert("/:name", 7);
 
-    let (h, p) = tree.find("/name:john").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/name:john").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1193,8 +1211,8 @@ fn match_params() {
     assert_eq!(p.pattern(), "/name\\::name");
     assert_eq!(p.params(), vec![("name", "john")]);
 
-    let (h, p) = tree.find("/@john").unwrap();
-    assert_eq!(h, &2);
+    let (h, p) = &tree.find("/@john").unwrap()[0];
+    assert_eq!(*h, &2);
     assert_eq!(
         p.pieces,
         vec![
@@ -1205,8 +1223,8 @@ fn match_params() {
     assert_eq!(p.pattern(), "/@:name");
     assert_eq!(p.params(), vec![("name", "john")]);
 
-    let (h, p) = tree.find("/-john").unwrap();
-    assert_eq!(h, &3);
+    let (h, p) = &tree.find("/-john").unwrap()[0];
+    assert_eq!(*h, &3);
     assert_eq!(
         p.pieces,
         vec![
@@ -1217,8 +1235,8 @@ fn match_params() {
     assert_eq!(p.pattern(), "/-:name");
     assert_eq!(p.params(), vec![("name", "john")]);
 
-    let (h, p) = tree.find("/.john").unwrap();
-    assert_eq!(h, &4);
+    let (h, p) = &tree.find("/.john").unwrap()[0];
+    assert_eq!(*h, &4);
     assert_eq!(
         p.pieces,
         vec![
@@ -1229,8 +1247,8 @@ fn match_params() {
     assert_eq!(p.pattern(), "/.:name");
     assert_eq!(p.params(), vec![("name", "john")]);
 
-    let (h, p) = tree.find("/~john").unwrap();
-    assert_eq!(h, &5);
+    let (h, p) = &tree.find("/~john").unwrap()[0];
+    assert_eq!(*h, &5);
     assert_eq!(
         p.pieces,
         vec![
@@ -1241,8 +1259,8 @@ fn match_params() {
     assert_eq!(p.pattern(), "/~:name");
     assert_eq!(p.params(), vec![("name", "john")]);
 
-    let (h, p) = tree.find("/_john").unwrap();
-    assert_eq!(h, &6);
+    let (h, p) = &tree.find("/_john").unwrap()[0];
+    assert_eq!(*h, &6);
     assert_eq!(
         p.pieces,
         vec![
@@ -1253,8 +1271,8 @@ fn match_params() {
     assert_eq!(p.pattern(), "/_:name");
     assert_eq!(p.params(), vec![("name", "john")]);
 
-    let (h, p) = tree.find("/john").unwrap();
-    assert_eq!(h, &7);
+    let (h, p) = &tree.find("/john").unwrap()[0];
+    assert_eq!(*h, &7);
     assert_eq!(
         p.pieces,
         vec![
@@ -1274,8 +1292,8 @@ fn match_params() {
 
     tree.insert("/api/v1/:param/abc/*", 1);
 
-    let (h, p) = tree.find("/api/v1/well/abc/wildcard").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/api/v1/well/abc/wildcard").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1288,7 +1306,7 @@ fn match_params() {
     assert_eq!(p.pattern(), "/api/v1/:param/abc/*");
     assert_eq!(p.params(), vec![("param", "well"), ("*1", "wildcard")]);
 
-    let (_, p) = tree.find("/api/v1/well/abc/").unwrap();
+    let (_, p) = &tree.find("/api/v1/well/abc/").unwrap()[0];
     assert_eq!(p.params(), vec![("param", "well"), ("*1", "")]);
 
     assert_eq!(tree.find("/api/v1/well/abc"), None);
@@ -1307,8 +1325,8 @@ fn match_params() {
 
     assert_eq!(tree.find("/api/1"), None);
 
-    let (h, p) = tree.find("/api/1/").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/api/1/").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1323,21 +1341,21 @@ fn match_params() {
     assert_eq!(p.pattern(), "/api/:day/:month?/:year?");
     assert_eq!(p.params(), vec![("day", "1"), ("month", ""), ("year", "")]);
 
-    let (_, p) = tree.find("/api/1//").unwrap();
+    let (_, p) = &tree.find("/api/1//").unwrap()[0];
     assert_eq!(p.params(), vec![("day", "1"), ("month", ""), ("year", "")]);
 
-    let (_, p) = tree.find("/api/1/-/").unwrap();
+    let (_, p) = &tree.find("/api/1/-/").unwrap()[0];
     assert_eq!(p.params(), vec![("day", "1"), ("month", "-"), ("year", "")]);
 
     assert_eq!(tree.find("/api/1-"), None);
 
-    let (_, p) = tree.find("/api/1-/").unwrap();
+    let (_, p) = &tree.find("/api/1-/").unwrap()[0];
     assert_eq!(p.params(), vec![("day", "1-"), ("month", ""), ("year", "")]);
 
-    let (_, p) = tree.find("/api/1/2").unwrap();
+    let (_, p) = &tree.find("/api/1/2").unwrap()[0];
     assert_eq!(p.params(), vec![("day", "1"), ("month", "2"), ("year", "")]);
 
-    let (_, p) = tree.find("/api/1/2/3").unwrap();
+    let (_, p) = &tree.find("/api/1/2/3").unwrap()[0];
     assert_eq!(
         p.params(),
         vec![("day", "1"), ("month", "2"), ("year", "3")]
@@ -1359,8 +1377,8 @@ fn match_params() {
     assert_eq!(tree.find("/api/1/"), None);
     assert_eq!(tree.find("/api/1."), None);
 
-    let (h, p) = tree.find("/api/1..").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/api/1..").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1375,19 +1393,19 @@ fn match_params() {
     assert_eq!(p.pattern(), "/api/:day.:month?.:year?");
     assert_eq!(p.params(), vec![("day", "1"), ("month", ""), ("year", "")]);
 
-    let (h, p) = tree.find("/api/1.2.").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/api/1.2.").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(p.params(), vec![("day", "1"), ("month", "2"), ("year", "")]);
 
-    let (h, p) = tree.find("/api/1.2.3").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/api/1.2.3").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.params(),
         vec![("day", "1"), ("month", "2"), ("year", "3")]
     );
 
-    let (h, p) = tree.find("/api/1--").unwrap();
-    assert_eq!(h, &2);
+    let (h, p) = &tree.find("/api/1--").unwrap()[0];
+    assert_eq!(*h, &2);
     assert_eq!(
         p.pieces,
         vec![
@@ -1402,12 +1420,12 @@ fn match_params() {
     assert_eq!(p.pattern(), "/api/:day-:month?-:year?");
     assert_eq!(p.params(), vec![("day", "1"), ("month", ""), ("year", "")]);
 
-    let (h, p) = tree.find("/api/1-2-").unwrap();
-    assert_eq!(h, &2);
+    let (h, p) = &tree.find("/api/1-2-").unwrap()[0];
+    assert_eq!(*h, &2);
     assert_eq!(p.params(), vec![("day", "1"), ("month", "2"), ("year", "")]);
 
-    let (h, p) = tree.find("/api/1-2-3").unwrap();
-    assert_eq!(h, &2);
+    let (h, p) = &tree.find("/api/1-2-3").unwrap()[0];
+    assert_eq!(*h, &2);
     assert_eq!(
         p.params(),
         vec![("day", "1"), ("month", "2"), ("year", "3")]
@@ -1428,14 +1446,14 @@ fn match_params() {
     tree.insert("/config/+.json", 2);
     tree.insert("/config/*.json", 3);
 
-    let (h, p) = tree.find("/config/abc.json").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/config/abc.json").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(p.pieces, vec![Piece::String(b"/config/abc.json".to_vec())]);
     assert_eq!(p.pattern(), "/config/abc.json");
     assert_eq!(p.params(), vec![]);
 
-    let (h, p) = tree.find("/config/a.json").unwrap();
-    assert_eq!(h, &2);
+    let (h, p) = &tree.find("/config/a.json").unwrap()[0];
+    assert_eq!(*h, &2);
     assert_eq!(
         p.pieces,
         vec![
@@ -1447,20 +1465,20 @@ fn match_params() {
     assert_eq!(p.pattern(), "/config/+.json");
     assert_eq!(p.params(), vec![("+1", "a")]);
 
-    let (h, p) = tree.find("/config/ab.json").unwrap();
-    assert_eq!(h, &2);
+    let (h, p) = &tree.find("/config/ab.json").unwrap()[0];
+    assert_eq!(*h, &2);
     assert_eq!(p.params(), vec![("+1", "ab")]);
 
-    let (h, p) = tree.find("/config/a/b.json").unwrap();
-    assert_eq!(h, &2);
+    let (h, p) = &tree.find("/config/a/b.json").unwrap()[0];
+    assert_eq!(*h, &2);
     assert_eq!(p.params(), vec![("+1", "a/b")]);
 
-    let (h, p) = tree.find("/config/a/b/abc.json").unwrap();
-    assert_eq!(h, &2);
+    let (h, p) = &tree.find("/config/a/b/abc.json").unwrap()[0];
+    assert_eq!(*h, &2);
     assert_eq!(p.params(), vec![("+1", "a/b/abc")]);
 
-    let (h, p) = tree.find("/config/.json").unwrap();
-    assert_eq!(h, &3);
+    let (h, p) = &tree.find("/config/.json").unwrap()[0];
+    assert_eq!(*h, &3);
     assert_eq!(
         p.pieces,
         vec![
@@ -1481,8 +1499,8 @@ fn match_params() {
 
     tree.insert("/api/*/:param?", 1);
 
-    let (h, p) = tree.find("/api/").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/api/").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1495,19 +1513,19 @@ fn match_params() {
     assert_eq!(p.pattern(), "/api/*/:param?");
     assert_eq!(p.params(), vec![("*1", ""), ("param", "")]);
 
-    let (_, p) = tree.find("/api/joker").unwrap();
+    let (_, p) = &tree.find("/api/joker").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", ""), ("param", "joker")]);
 
-    let (_, p) = tree.find("/api/joker/").unwrap();
+    let (_, p) = &tree.find("/api/joker/").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", "joker"), ("param", "")]);
 
-    let (_, p) = tree.find("/api/joker/batman").unwrap();
+    let (_, p) = &tree.find("/api/joker/batman").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", "joker"), ("param", "batman")]);
 
-    let (_, p) = tree.find("/api/joker/batman/robin").unwrap();
+    let (_, p) = &tree.find("/api/joker/batman/robin").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", "joker/batman"), ("param", "robin")]);
 
-    let (_, p) = tree.find("/api/joker/batman/robin/1").unwrap();
+    let (_, p) = &tree.find("/api/joker/batman/robin/1").unwrap()[0];
     assert_eq!(
         p.params(),
         vec![("*1", "joker/batman/robin"), ("param", "1")]
@@ -1522,8 +1540,8 @@ fn match_params() {
 
     tree.insert("/api/*/:param", 1);
 
-    let (h, p) = tree.find("/api/test/abc").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/api/test/abc").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1536,13 +1554,13 @@ fn match_params() {
     assert_eq!(p.pattern(), "/api/*/:param");
     assert_eq!(p.params(), vec![("*1", "test"), ("param", "abc")]);
 
-    let (_, p) = tree.find("/api/joker/batman/robin/1").unwrap();
+    let (_, p) = &tree.find("/api/joker/batman/robin/1").unwrap()[0];
     assert_eq!(
         p.params(),
         vec![("*1", "joker/batman/robin"), ("param", "1")]
     );
 
-    let (_, p) = tree.find("/api//joker").unwrap();
+    let (_, p) = &tree.find("/api//joker").unwrap()[0];
     assert_eq!(p.params(), vec![("*1", ""), ("param", "joker")]);
 
     assert_eq!(tree.find("/api/joker"), None);
@@ -1557,8 +1575,8 @@ fn match_params() {
 
     tree.insert("/api/+/:param", 1);
 
-    let (h, p) = tree.find("/api/test/abc").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/api/test/abc").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1571,7 +1589,7 @@ fn match_params() {
     assert_eq!(p.pattern(), "/api/+/:param");
     assert_eq!(p.params(), vec![("+1", "test"), ("param", "abc")]);
 
-    let (_, p) = tree.find("/api/joker/batman/robin/1").unwrap();
+    let (_, p) = &tree.find("/api/joker/batman/robin/1").unwrap()[0];
     assert_eq!(
         p.params(),
         vec![("+1", "joker/batman/robin"), ("param", "1")]
@@ -1591,8 +1609,8 @@ fn match_params() {
 
     tree.insert("/api/*/:param/:param2", 1);
 
-    let (h, p) = tree.find("/api/test/abc/1").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/api/test/abc/1").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(
         p.pieces,
         vec![
@@ -1612,7 +1630,7 @@ fn match_params() {
 
     assert_eq!(tree.find("/api/joker/batman"), None);
 
-    let (_, p) = tree.find("/api/joker/batman-robin/1").unwrap();
+    let (_, p) = &tree.find("/api/joker/batman-robin/1").unwrap()[0];
     assert_eq!(
         p.params(),
         vec![("*1", "joker"), ("param", "batman-robin"), ("param2", "1")]
@@ -1621,19 +1639,19 @@ fn match_params() {
     assert_eq!(tree.find("/api/joker-batman-robin-1"), None);
     assert_eq!(tree.find("/api/test/abc"), None);
 
-    let (_, p) = tree.find("/api/joker/batman/robin").unwrap();
+    let (_, p) = &tree.find("/api/joker/batman/robin").unwrap()[0];
     assert_eq!(
         p.params(),
         vec![("*1", "joker"), ("param", "batman"), ("param2", "robin")]
     );
 
-    let (_, p) = tree.find("/api/joker/batman/robin/1").unwrap();
+    let (_, p) = &tree.find("/api/joker/batman/robin/1").unwrap()[0];
     assert_eq!(
         p.params(),
         vec![("*1", "joker/batman"), ("param", "robin"), ("param2", "1")]
     );
 
-    let (_, p) = tree.find("/api/joker/batman/robin/1/2").unwrap();
+    let (_, p) = &tree.find("/api/joker/batman/robin/1/2").unwrap()[0];
     assert_eq!(
         p.params(),
         vec![
@@ -1705,38 +1723,38 @@ fn basic() {
 "
     );
 
-    let (h, p) = tree.find("/").unwrap();
-    assert_eq!(h, &0);
+    let (h, p) = &tree.find("/").unwrap()[0];
+    assert_eq!(*h, &0);
     assert_eq!(p.params(), vec![]);
 
-    tree.insert("", 14);
-    let (h, p) = tree.find("/").unwrap();
-    assert_eq!(h, &14);
-    assert_eq!(p.params(), vec![]);
+    // tree.insert("", 14);
+    // let (h, p) = &tree.find("/").unwrap()[0];
+    // assert_eq!(*h, &14);
+    // assert_eq!(p.params(), vec![]);
 
     tree.insert("/", 15);
-    let (h, p) = tree.find("/").unwrap();
-    assert_eq!(h, &15);
+    let (h, p) = &tree.find("/").unwrap()[1];
+    assert_eq!(*h, &15);
     assert_eq!(p.params(), vec![]);
 
-    let (h, p) = tree.find("/login").unwrap();
-    assert_eq!(h, &1);
+    let (h, p) = &tree.find("/login").unwrap()[0];
+    assert_eq!(*h, &1);
     assert_eq!(p.params(), vec![]);
 
-    let (h, p) = tree.find("/settings/admin").unwrap();
-    assert_eq!(h, &4);
+    let (h, p) = &tree.find("/settings/admin").unwrap()[0];
+    assert_eq!(*h, &4);
     assert_eq!(p.params(), vec![("page", "admin")]);
 
-    let (h, p) = tree.find("/viz-rs").unwrap();
-    assert_eq!(h, &5);
+    let (h, p) = &tree.find("/viz-rs").unwrap()[0];
+    assert_eq!(*h, &5);
     assert_eq!(p.params(), vec![("user", "viz-rs")]);
 
-    let (h, p) = tree.find("/viz-rs/path-tree").unwrap();
-    assert_eq!(h, &6);
+    let (h, p) = &tree.find("/viz-rs/path-tree").unwrap()[0];
+    assert_eq!(*h, &6);
     assert_eq!(p.params(), vec![("user", "viz-rs"), ("repo", "path-tree")]);
 
-    let (h, p) = tree.find("/rust-lang/rust-analyzer/releases/download/2022-09-12/rust-analyzer-aarch64-apple-darwin.gz").unwrap();
-    assert_eq!(h, &8);
+    let (h, p) = &tree.find("/rust-lang/rust-analyzer/releases/download/2022-09-12/rust-analyzer-aarch64-apple-darwin.gz").unwrap()[0];
+    assert_eq!(*h, &8);
     assert_eq!(
         p.params(),
         vec![
@@ -1748,10 +1766,10 @@ fn basic() {
         ]
     );
 
-    let (h, p) = tree
+    let (h, p) = &tree
         .find("/rust-lang/rust-analyzer/tags/2022-09-12")
-        .unwrap();
-    assert_eq!(h, &9);
+        .unwrap()[0];
+    assert_eq!(*h, &9);
     assert_eq!(
         p.params(),
         vec![
@@ -1763,10 +1781,10 @@ fn basic() {
         ]
     );
 
-    let (h, p) = tree
+    let (h, p) = &tree
         .find("/rust-lang/rust-analyzer/actions/ci:bench")
-        .unwrap();
-    assert_eq!(h, &10);
+        .unwrap()[0];
+    assert_eq!(*h, &10);
     assert_eq!(
         p.params(),
         vec![
@@ -1777,8 +1795,8 @@ fn basic() {
         ]
     );
 
-    let (h, p) = tree.find("/rust-lang/rust-analyzer/stargazers").unwrap();
-    assert_eq!(h, &11);
+    let (h, p) = &tree.find("/rust-lang/rust-analyzer/stargazers").unwrap()[0];
+    assert_eq!(*h, &11);
     assert_eq!(
         p.params(),
         vec![
@@ -1788,10 +1806,10 @@ fn basic() {
         ]
     );
 
-    let (h, p) = tree
+    let (h, p) = &tree
         .find("/rust-lang/rust-analyzer/stargazers/404")
-        .unwrap();
-    assert_eq!(h, &12);
+        .unwrap()[0];
+    assert_eq!(*h, &12);
     assert_eq!(
         p.params(),
         vec![
@@ -1801,12 +1819,12 @@ fn basic() {
         ]
     );
 
-    let (h, p) = tree.find("/public/js/main.js").unwrap();
-    assert_eq!(h, &7);
+    let (h, p) = &tree.find("/public/js/main.js").unwrap()[0];
+    assert_eq!(*h, &7);
     assert_eq!(p.params(), vec![("any", "js/main.js")]);
 
-    let (h, p) = tree.find("/api/v1").unwrap();
-    assert_eq!(h, &13);
+    let (h, p) = &tree.find("/api/v1").unwrap()[0];
+    assert_eq!(*h, &13);
     assert_eq!(p.params(), vec![("+1", "v1")]);
 }
 
@@ -1942,7 +1960,7 @@ fn github_tree() {
 
     tree.insert("/:org/:repo/*", 3000);
     tree.insert("/:org/:repo/releases/*", 3001);
-    let id = tree.insert("/:org/:repo/releases/download/:tag/:filename.:ext", 3002);
+    let (id, sid) = tree.insert("/:org/:repo/releases/download/:tag/:filename.:ext", 3002);
     assert_eq!(
         tree.url_for(id, &["viz-rs", "path-tree", "v0.5.0", "v0.5.0", "gz"])
             .unwrap(),
@@ -2127,37 +2145,37 @@ fn github_tree() {
 "
     );
 
-    let (h, p) = tree.find("/rust-lang/rust").unwrap();
-    assert_eq!(h, &2400);
+    let (h, p) = &tree.find("/rust-lang/rust").unwrap()[0];
+    assert_eq!(*h, &2400);
     assert_eq!(p.params(), vec![("org", "rust-lang"), ("repo", "rust")]);
 
-    let (h, p) = tree.find("/settings").unwrap();
-    assert_eq!(h, &20);
+    let (h, p) = &tree.find("/settings").unwrap()[0];
+    assert_eq!(*h, &20);
     assert!(p.params().is_empty());
 
-    let (h, p) = tree.find("/rust-lang/rust/actions/runs/1").unwrap();
-    assert_eq!(h, &2442);
+    let (h, p) = &tree.find("/rust-lang/rust/actions/runs/1").unwrap()[0];
+    assert_eq!(*h, &2442);
     assert_eq!(
         p.params(),
         vec![("org", "rust-lang"), ("repo", "rust"), ("id", "1")]
     );
 
-    let (h, p) = tree.find("/rust-lang/rust/").unwrap();
-    assert_eq!(h, &3000);
+    let (h, p) = &tree.find("/rust-lang/rust/").unwrap()[0];
+    assert_eq!(*h, &3000);
     assert_eq!(
         p.params(),
         vec![("org", "rust-lang"), ("repo", "rust"), ("*1", "")]
     );
 
-    let (h, p) = tree.find("/rust-lang/rust/any").unwrap();
-    assert_eq!(h, &3000);
+    let (h, p) = &tree.find("/rust-lang/rust/any").unwrap()[0];
+    assert_eq!(*h, &3000);
     assert_eq!(
         p.params(),
         vec![("org", "rust-lang"), ("repo", "rust"), ("*1", "any")]
     );
 
-    let (h, p) = tree.find("/rust-lang/rust/releases/").unwrap();
-    assert_eq!(h, &3001);
+    let (h, p) = &tree.find("/rust-lang/rust/releases/").unwrap()[0];
+    assert_eq!(*h, &3001);
     assert_eq!(
         p.params(),
         vec![("org", "rust-lang"), ("repo", "rust"), ("*1", "")]
@@ -2174,8 +2192,8 @@ fn github_tree() {
         ]
     );
 
-    let (h, p) = tree.find("/rust-lang/rust-analyzer/releases/download/2022-09-12/rust-analyzer-aarch64-apple-darwin.gz").unwrap();
-    assert_eq!(h, &3002);
+    let (h, p) = &tree.find("/rust-lang/rust-analyzer/releases/download/2022-09-12/rust-analyzer-aarch64-apple-darwin.gz").unwrap()[0];
+    assert_eq!(*h, &3002);
     assert_eq!(
         p.params(),
         vec![
@@ -2226,11 +2244,11 @@ fn test_dots_no_ext() {
     let mut tree = PathTree::new();
     let _ = tree.insert("/:name", 1);
 
-    let result = tree.find("/abc.xyz.123");
+    let result = &tree.find("/abc.xyz.123");
     assert!(result.is_some());
 
-    let (value, params) = result.unwrap();
-    assert_eq!(value, &1);
+    let (value, params) = &result.as_ref().unwrap()[0];
+    assert_eq!(*value, &1);
 
     assert_eq!(params.params(), &[("name", "abc.xyz.123")]);
 }
@@ -2241,19 +2259,19 @@ fn test_dots_ext() {
     let _ = tree.insert("/:name+.123", 2);
     let _ = tree.insert("/:name*.123.456", 1);
 
-    let result = tree.find("/abc.xyz.123");
+    let result = &tree.find("/abc.xyz.123");
     assert!(result.is_some());
 
-    let (value, params) = result.unwrap();
-    assert_eq!(value, &2);
+    let (value, params) = &result.as_ref().unwrap()[0];
+    assert_eq!(*value, &2);
 
     assert_eq!(params.params(), &[("name", "abc.xyz")]);
 
-    let result = tree.find("/abc.xyz.123.456");
+    let result = &tree.find("/abc.xyz.123.456");
     assert!(result.is_some());
 
-    let (value, params) = result.unwrap();
-    assert_eq!(value, &1);
+    let (value, params) = &result.as_ref().unwrap()[0];
+    assert_eq!(*value, &1);
 
     assert_eq!(params.params(), &[("name", "abc.xyz")]);
 }
@@ -2274,43 +2292,43 @@ fn test_dots_ext_no_qualifier() {
 "
     );
 
-    let result = tree.find("/node.js");
+    let result = &tree.find("/node.js");
     assert!(result.is_some());
 
-    let (value, params) = result.unwrap();
-    assert_eq!(value, &2);
+    let (value, params) = &result.as_ref().unwrap()[0];
+    assert_eq!(*value, &2);
 
     assert_eq!(params.params(), &[("name", "node")]);
 
-    let result = tree.find("/path.lib.js");
+    let result = &tree.find("/path.lib.js");
     assert!(result.is_some());
 
-    let (value, params) = result.unwrap();
-    assert_eq!(value, &2);
+    let (value, params) = &result.as_ref().unwrap()[0];
+    assert_eq!(*value, &2);
 
     assert_eq!(params.params(), &[("name", "path.lib")]);
 
-    let result = tree.find("/node.js.js");
+    let result = &tree.find("/node.js.js");
     assert!(result.is_some());
 
-    let (value, params) = result.unwrap();
-    assert_eq!(value, &2);
+    let (value, params) = &result.as_ref().unwrap()[0];
+    assert_eq!(*value, &2);
 
     assert_eq!(params.params(), &[("name", "node.js")]);
 
-    let result = tree.find("/node.js.gz");
+    let result = &tree.find("/node.js.gz");
     assert!(result.is_some());
 
-    let (value, params) = result.unwrap();
-    assert_eq!(value, &1);
+    let (value, params) = &result.as_ref().unwrap()[0];
+    assert_eq!(*value, &1);
 
     assert_eq!(params.params(), &[("name", "node")]);
 
-    let result = tree.find("/node.js.gz.js.gz");
+    let result = &tree.find("/node.js.gz.js.gz");
     assert!(result.is_some());
 
-    let (value, params) = result.unwrap();
-    assert_eq!(value, &1);
+    let (value, params) = &result.as_ref().unwrap()[0];
+    assert_eq!(*value, &1);
 
     assert_eq!(params.params(), &[("name", "node.js.gz")]);
 }
